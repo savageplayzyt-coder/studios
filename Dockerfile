@@ -1,17 +1,26 @@
-# Use Dart official image
+# Use Dart official image as base
 FROM dart:stable
 
-# Set working directory inside the container
+# Install Node.js (LTS version)
+RUN apt-get update && \
+    apt-get install -y curl gnupg && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs
+
+# Set working directory
 WORKDIR /app
 
-# Copy project files into the container
-COPY . .
+# Copy Node.js files
+COPY package*.json ./
+RUN npm install
+COPY index.js orders.js deploy-commands.js ./
 
-# Install dependencies
+# Copy Dart files
+COPY pubspec.* bin/ ./bin/
 RUN dart pub get
 
-# Set environment variable for the token (Render will provide this)
-ENV TOKEN=${TOKEN}
+# Expose port if needed
+# EXPOSE 3000
 
-# Start the bot
-CMD ["dart", "run"]
+# Run both bots concurrently
+CMD ["bash", "-c", "node index.js & dart run bin/discord_bot.dart"]
